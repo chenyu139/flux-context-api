@@ -1,0 +1,35 @@
+# Core ML dependencies
+transformers>=4.36.0
+git+https://github.com/huggingface/diffusers.git
+accelerate>=0.25.0
+safetensors>=0.4.0
+sentencepiece>=0.1.99
+# PyTorch with CUDA 12.1 support (compatible with CUDA 12.9)
+torch>=2.1.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
+
+# FastAPI and web server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart
+
+# Image processing
+Pillow>=10.0.0
+numpy
+
+# Utilities
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv
+aiofiles
+typing-extensions
+protobuf>=4.23,<4.26
+
+# Optional: for better performance
+orjson
+
+# Development (optional)
+pytest
+pytest-asyncio
+httpx
