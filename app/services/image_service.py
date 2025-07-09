@@ -172,11 +172,10 @@ class ImageService:
                 if input_image.size != (target_width, target_height):
                     input_image = resize_image(input_image, (target_width, target_height))
             
-            # 生成变体
+            # 生成变体 - 支持多个提示词
             images = await self._generate_image_variations(
                 image=input_image,
-                prompt=request.prompt,
-                num_images=request.n,
+                prompts=request.prompts,
                 guidance_scale=request.guidance_scale,
                 num_inference_steps=request.num_inference_steps,
                 variation_strength=request.variation_strength,
@@ -269,27 +268,38 @@ class ImageService:
     async def _generate_image_variations(
         self,
         image: Image.Image,
-        prompt: str,
-        num_images: int,
+        prompts: List[str],
         guidance_scale: float,
         num_inference_steps: int,
         variation_strength: float,
         seed: Optional[int] = None
     ) -> List[Image.Image]:
-        """生成图片变体"""
-        # 在线程池中执行变体生成任务
-        loop = asyncio.get_event_loop()
-        images = await loop.run_in_executor(
-            self.executor,
-            model_manager.generate_variations,
-            image,
-            prompt,
-            num_images,
-            guidance_scale,
-            num_inference_steps,
-            variation_strength,
-            seed
-        )
+        """生成图片变体（多个提示词，每个提示词对应一个变体）"""
+        images = []
+        
+        for i, prompt in enumerate(prompts):
+            # 为每个提示词设置不同的种子
+            current_seed = seed + i if seed is not None else None
+            
+            # 在线程池中执行变体生成任务
+            loop = asyncio.get_event_loop()
+            variation_image = await loop.run_in_executor(
+                self.executor,
+                model_manager.generate_variations,
+                image,
+                prompt,
+                1,  # 每个提示词生成一张图片
+                guidance_scale,
+                num_inference_steps,
+                variation_strength,
+                current_seed
+            )
+            
+            # generate_variations返回的是列表，取第一个元素
+            if isinstance(variation_image, list):
+                images.append(variation_image[0])
+            else:
+                images.append(variation_image)
         
         return images
 

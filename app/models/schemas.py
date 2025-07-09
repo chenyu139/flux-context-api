@@ -64,13 +64,27 @@ class ImageEditRequest(BaseImageRequest):
             raise ValueError("Invalid base64 image format")
 
 
-class ImageVariationRequest(BaseImageRequest):
+class ImageVariationRequest(BaseModel):
     """图片变体生成请求模型"""
     image: str = Field(..., description="base64编码的参考图片")
+    prompts: List[str] = Field(..., description="提示词列表，每个提示词对应一个变体图片", min_items=1, max_items=10)
+    size: Optional[str] = Field("1024x1024", description="图片尺寸")
+    response_format: ResponseFormat = Field(ResponseFormat.URL, description="响应格式")
+    user: Optional[str] = Field(None, description="用户标识")
     guidance_scale: float = Field(2.5, description="引导强度", ge=1.0, le=10.0)
     num_inference_steps: int = Field(28, description="推理步数", ge=1, le=50)
     seed: Optional[int] = Field(None, description="随机种子")
     variation_strength: float = Field(0.7, description="变体强度", ge=0.1, le=1.0)
+    
+    @validator('prompts')
+    def validate_prompts(cls, v):
+        """验证提示词列表"""
+        for prompt in v:
+            if not prompt or len(prompt.strip()) == 0:
+                raise ValueError("Each prompt must be non-empty")
+            if len(prompt) > 4000:
+                raise ValueError("Each prompt must be less than 4000 characters")
+        return v
     
     @validator('image')
     def validate_image(cls, v):
@@ -86,6 +100,11 @@ class ImageVariationRequest(BaseImageRequest):
             return v
         except Exception:
             raise ValueError("Invalid base64 image format")
+    
+    @property
+    def n(self) -> int:
+        """返回图片生成数量，等于提示词数量"""
+        return len(self.prompts)
 
 
 class ImageData(BaseModel):

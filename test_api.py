@@ -155,14 +155,16 @@ class APITester:
             return False
     
     async def test_image_variations(self) -> bool:
-        """测试图片变体接口"""
+        """测试图片变体接口（多提示词）"""
         try:
             test_image = self.create_test_image()
             
             payload = {
                 "image": test_image,
-                "prompt": "Same subject, different style",
-                "n": 2,
+                "prompts": [
+                    "Same subject, different style",
+                    "Make it more colorful and vibrant"
+                ],
                 "size": "512x512",
                 "response_format": "b64_json"
             }
@@ -175,8 +177,13 @@ class APITester:
                 if response.status == 200:
                     data = await response.json()
                     images = data.get('data', [])
-                    self.log_test("Image Variations", True, f"Generated {len(images)} variations")
-                    return True
+                    expected_count = len(payload["prompts"])
+                    if len(images) == expected_count:
+                        self.log_test("Image Variations", True, f"Generated {len(images)} variations (expected {expected_count})")
+                        return True
+                    else:
+                        self.log_test("Image Variations", False, f"Expected {expected_count} images, got {len(images)}")
+                        return False
                 else:
                     text = await response.text()
                     self.log_test("Image Variations", False, f"HTTP {response.status}: {text[:100]}")
@@ -185,18 +192,128 @@ class APITester:
             self.log_test("Image Variations", False, str(e))
             return False
     
+    async def test_variations_multi_prompts(self) -> bool:
+        """测试多提示词变体生成"""
+        try:
+            test_image = self.create_test_image()
+            
+            # 测试多个提示词
+            payload = {
+                "image": test_image,
+                "prompts": [
+                    "Transform into a watercolor painting",
+                    "Make it look like a pencil sketch",
+                    "Convert to anime style"
+                ],
+                "size": "512x512",
+                "response_format": "b64_json"
+            }
+            
+            async with self.session.post(
+                f"{self.base_url}/v1/images/variations",
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=180)
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    images = data.get('data', [])
+                    expected_count = len(payload["prompts"])
+                    if len(images) == expected_count:
+                        self.log_test("Multi-Prompt Variations", True, f"Generated {len(images)} variations for {expected_count} prompts")
+                        return True
+                    else:
+                        self.log_test("Multi-Prompt Variations", False, f"Expected {expected_count} images, got {len(images)}")
+                        return False
+                else:
+                    text = await response.text()
+                    self.log_test("Multi-Prompt Variations", False, f"HTTP {response.status}: {text[:100]}")
+                    return False
+        except Exception as e:
+            self.log_test("Multi-Prompt Variations", False, str(e))
+            return False
+    
+    async def test_variations_validation(self) -> bool:
+        """测试变体接口参数验证"""
+        test_image = self.create_test_image()
+        tests_passed = 0
+        total_tests = 3
+        
+        # 测试1: 空提示词列表
+        try:
+            payload = {
+                "image": test_image,
+                "prompts": [],
+                "size": "512x512"
+            }
+            
+            async with self.session.post(
+                f"{self.base_url}/v1/images/variations",
+                json=payload
+            ) as response:
+                if response.status == 422:  # Validation error
+                    tests_passed += 1
+                    print("  ✅ Empty prompts list correctly rejected")
+                else:
+                    print(f"  ❌ Empty prompts: Expected 422, got {response.status}")
+        except Exception as e:
+            print(f"  ❌ Empty prompts test failed: {e}")
+        
+        # 测试2: 过多提示词
+        try:
+            payload = {
+                "image": test_image,
+                "prompts": [f"Prompt {i}" for i in range(15)],  # 超过10个
+                "size": "512x512"
+            }
+            
+            async with self.session.post(
+                f"{self.base_url}/v1/images/variations",
+                json=payload
+            ) as response:
+                if response.status == 422:
+                    tests_passed += 1
+                    print("  ✅ Too many prompts correctly rejected")
+                else:
+                    print(f"  ❌ Too many prompts: Expected 422, got {response.status}")
+        except Exception as e:
+            print(f"  ❌ Too many prompts test failed: {e}")
+        
+        # 测试3: 空提示词
+        try:
+            payload = {
+                "image": test_image,
+                "prompts": ["Valid prompt", "", "Another valid prompt"],
+                "size": "512x512"
+            }
+            
+            async with self.session.post(
+                f"{self.base_url}/v1/images/variations",
+                json=payload
+            ) as response:
+                if response.status == 422:
+                    tests_passed += 1
+                    print("  ✅ Empty prompt in list correctly rejected")
+                else:
+                    print(f"  ❌ Empty prompt: Expected 422, got {response.status}")
+        except Exception as e:
+            print(f"  ❌ Empty prompt test failed: {e}")
+        
+        success = tests_passed == total_tests
+        self.log_test("Variations Validation", success, f"{tests_passed}/{total_tests} validation tests passed")
+        return success
+    
     async def test_error_handling(self) -> bool:
         """测试错误处理"""
         try:
             # 测试无效的图片数据
             payload = {
                 "image": "invalid_base64_data",
-                "prompt": "Test prompt",
-                "n": 1
+                "prompts": ["Test prompt"],
+                "size": "512x512"
             }
             
             async with self.session.post(
-                f"{self.base_url}/v1/images/edits",
+                f"{self.base_url}/v1/images/variations",
                 json=payload
             ) as response:
                 if response.status == 400:
@@ -231,6 +348,10 @@ class APITester:
         results['generation'] = await self.test_image_generation()
         results['edit'] = await self.test_image_edit()
         results['variations'] = await self.test_image_variations()
+        
+        print("\n🎨 Testing advanced variations features...\n")
+        results['multi_prompt_variations'] = await self.test_variations_multi_prompts()
+        results['variations_validation'] = await self.test_variations_validation()
         
         return results
     

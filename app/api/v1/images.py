@@ -235,11 +235,16 @@ generate_variations.__doc__ += """
 ```json
 {
   "image": "iVBORw0KGgoAAAANSUhEUgAA...",
-  "prompt": "保持主体，改变背景为海滩",
-  "n": 3,
+  "prompts": [
+    "保持主体，改变背景为海滩",
+    "保持主体，改变背景为森林",
+    "保持主体，改变背景为城市夜景"
+  ],
   "size": "1024x1024",
   "response_format": "url",
   "variation_strength": 0.7
 }
 ```
+
+**注意:** 每个提示词对应生成一张变体图片，图片数量等于提示词数量。
 """
