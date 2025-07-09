@@ -201,7 +201,7 @@ class FluxModelManager:
                 # 构建变体提示词
                 variation_prompt = f"Based on this image, {prompt}. Keep the main subject but add variations."
                 
-                # 生成变体
+                # 生成变体 - 移除不支持的strength参数
                 result = self._pipeline(
                     image=image,
                     prompt=variation_prompt,
@@ -210,7 +210,6 @@ class FluxModelManager:
                     guidance_scale=guidance_scale,
                     num_inference_steps=num_inference_steps,
                     generator=generator,
-                    strength=variation_strength,  # 控制变体强度
                     **kwargs
                 )
                 
