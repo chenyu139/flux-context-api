@@ -108,8 +108,10 @@ class FluxModelManager:
             # 设置随机种子
             generator = None
             if seed is not None:
+                # 确保种子值在有效范围内 (0 到 2^32-1)
+                safe_seed = abs(seed) % (2**32)
                 generator = torch.Generator(device=self._pipeline.device)
-                generator.manual_seed(seed)
+                generator.manual_seed(safe_seed)
             
             # 生成图片
             result = self._pipeline(
@@ -148,8 +150,10 @@ class FluxModelManager:
             # 设置随机种子
             generator = None
             if seed is not None:
+                # 确保种子值在有效范围内 (0 到 2^32-1)
+                safe_seed = abs(seed) % (2**32)
                 generator = torch.Generator(device=self._pipeline.device)
-                generator.manual_seed(seed)
+                generator.manual_seed(safe_seed)
             
             # 编辑图片
             result = self._pipeline(
@@ -195,8 +199,10 @@ class FluxModelManager:
                 current_seed = seed + i if seed is not None else None
                 generator = None
                 if current_seed is not None:
+                    # 确保种子值在有效范围内 (0 到 2^32-1)
+                    safe_seed = abs(current_seed) % (2**32)
                     generator = torch.Generator(device=self._pipeline.device)
-                    generator.manual_seed(current_seed)
+                    generator.manual_seed(safe_seed)
                 
                 # 构建变体提示词
                 variation_prompt = f"Based on this image, {prompt}. Keep the main subject but add variations."

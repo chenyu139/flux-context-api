@@ -214,7 +214,10 @@ class ImageService:
         
         for i in range(num_images):
             # 为每张图片设置不同的种子
-            current_seed = seed + i if seed is not None else None
+            current_seed = (seed + i) if seed is not None else None
+            if current_seed is not None:
+                # 确保种子值在有效范围内
+                current_seed = abs(current_seed) % (2**32)
             
             # 在线程池中执行生成任务
             loop = asyncio.get_event_loop()
@@ -247,7 +250,10 @@ class ImageService:
         
         for i in range(num_images):
             # 为每张图片设置不同的种子
-            current_seed = seed + i if seed is not None else None
+            current_seed = (seed + i) if seed is not None else None
+            if current_seed is not None:
+                # 确保种子值在有效范围内
+                current_seed = abs(current_seed) % (2**32)
             
             # 在线程池中执行编辑任务
             loop = asyncio.get_event_loop()
@@ -279,7 +285,10 @@ class ImageService:
         
         for i, prompt in enumerate(prompts):
             # 为每个提示词设置不同的种子
-            current_seed = seed + i if seed is not None else None
+            current_seed = (seed + i) if seed is not None else None
+            if current_seed is not None:
+                # 确保种子值在有效范围内
+                current_seed = abs(current_seed) % (2**32)
             
             # 在线程池中执行变体生成任务
             loop = asyncio.get_event_loop()
