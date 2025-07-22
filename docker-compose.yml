@@ -1,38 +1,12 @@
 version: '3.8'
 
 services:
-  # CPU版本服务
-  flux-api-cpu:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: flux-kontext-api-cpu
-    ports:
-      - "8000:8000"
-    environment:
-      - DEVICE=cpu
-      - DEBUG=false
-      - HOST=0.0.0.0
-      - PORT=8000
-    volumes:
-      - ./static:/app/static
-      - ./logs:/app/logs
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    profiles:
-      - cpu
-
   # GPU版本服务
   flux-api-gpu:
     build:
       context: .
-      dockerfile: Dockerfile.gpu
-    container_name: flux-kontext-api-gpu
+      dockerfile: Dockerfile
+    container_name: flux-kontext-api
     ports:
       - "8000:8000"
     environment:
@@ -44,8 +18,9 @@ services:
     volumes:
       - ./static:/app/static
       - ./logs:/app/logs
-      - ~/.cache/huggingface:/root/.cache/huggingface  # HuggingFace缓存
+      - ~/.cache/modelscope:/root/.cache/modelscope  # HuggingFace缓存
     restart: unless-stopped
+    command: /bin/bash -c "./start.sh --run_only"
     deploy:
       resources:
         reservations:
